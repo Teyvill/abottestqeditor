@@ -21,6 +21,7 @@ const LEVEL_ITEMS: Record<number, PaletteItem[]> = {
     { kind: 'unlock', label: 'Unlock' },
   ],
   3: [
+    { kind: 'start', label: 'Start', singleton: true },
     { kind: 'eventActor', label: 'Event Actor' },
     { kind: 'location', label: 'Location' },
     { kind: 'dialogue', label: 'Dialogue' },

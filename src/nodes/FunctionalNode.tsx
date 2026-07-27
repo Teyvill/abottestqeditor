@@ -13,7 +13,7 @@ export function FunctionalNode({ id, data, selected }: NodeProps) {
   return (
     <NodeShell
       kind="functional"
-      title="Functional"
+      title="ƒ Functional"
       selected={selected}
       onDoubleClick={() => enterContainer(id)}
       headerRight={
@@ -22,7 +22,7 @@ export function FunctionalNode({ id, data, selected }: NodeProps) {
         </span>
       }
     >
-      <PinRow side="left" type="target" id="conditions" label="launch conditions" active={false} laterTooltip="later: launch conditions" />
+      <PinRow side="left" type="target" id="conditions" label="trigger" pinType="trigger" />
       <Field label="Name">
         <input
           className={inputCls}
@@ -31,7 +31,7 @@ export function FunctionalNode({ id, data, selected }: NodeProps) {
         />
       </Field>
       <div className="text-[10px] text-neutral-500 italic">Double-click to open script</div>
-      <PinRow side="right" type="source" id="impact" label="end of script" activeColor="#60a5fa" />
+      <PinRow side="right" type="source" id="impact" label="end of script" pinType="story" />
     </NodeShell>
   );
 }

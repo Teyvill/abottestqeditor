@@ -1,15 +1,17 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   ReactFlow,
   Background,
   BackgroundVariant,
   MiniMap,
   Controls,
+  MarkerType,
   type NodeMouseHandler,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useStore } from '../store';
 import { nodeTypes } from '../nodes';
+import { PIN_TYPE_COLOR, resolvePinType } from '../nodes/pinTypes';
 import { Breadcrumbs } from './Breadcrumbs';
 import { Palette } from './Palette';
 import { Toolbar } from './Toolbar';
@@ -33,12 +35,25 @@ export function Canvas() {
     [enterContainer],
   );
 
+  const styledEdges = useMemo(
+    () =>
+      graph.edges.map((e) => {
+        const color = PIN_TYPE_COLOR[resolvePinType(e.sourceHandle)];
+        return {
+          ...e,
+          style: { stroke: color, strokeWidth: 2.5 },
+          markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
+        };
+      }),
+    [graph.edges],
+  );
+
   return (
     <div className="relative w-full h-full">
       <ReactFlow
         key={containerId}
         nodes={graph.nodes}
-        edges={graph.edges}
+        edges={styledEdges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -47,7 +62,6 @@ export function Canvas() {
         onNodesDelete={(nodes) => nodes.forEach((n) => deleteNode(n.id))}
         onEdgesDelete={(edges) => edges.forEach((e) => deleteEdge(e.id))}
         deleteKeyCode={['Backspace', 'Delete']}
-        defaultEdgeOptions={{ style: { stroke: '#71717a', strokeWidth: 2 } }}
         fitView
         minZoom={0.1}
         maxZoom={2}

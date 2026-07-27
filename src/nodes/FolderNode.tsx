@@ -13,7 +13,7 @@ export function FolderNode({ id, data, selected }: NodeProps) {
   return (
     <NodeShell
       kind="folder"
-      title="Folder"
+      title="📁 Folder"
       selected={selected}
       onDoubleClick={() => enterContainer(id)}
       headerRight={
@@ -22,7 +22,7 @@ export function FolderNode({ id, data, selected }: NodeProps) {
         </span>
       }
     >
-      <PinRow side="left" type="target" id="conditions" label="launch conditions" active={false} laterTooltip="later: launch conditions" />
+      <PinRow side="left" type="target" id="conditions" label="trigger" pinType="trigger" />
       <Field label="Name">
         <input
           className={inputCls}

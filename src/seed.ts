@@ -33,6 +33,7 @@ export function buildSeed(): Record<string, GraphData> {
       data: { kind: 'folder', name: 'Lindenmoor — Events' },
     },
   ];
+  const rootEdges: FlowEdge[] = [edge('seed_e_start_folder', ID.rootStart, ID.folder, 'out', 'conditions')];
 
   const folderGraph: FlowNode[] = [
     { id: ID.folderStart, type: 'start', position: { x: 60, y: 200 }, data: { kind: 'start' } },
@@ -45,6 +46,7 @@ export function buildSeed(): Record<string, GraphData> {
     { id: ID.folderEnd, type: 'end', position: { x: 660, y: 200 }, data: { kind: 'end' } },
   ];
   const folderEdges: FlowEdge[] = [
+    edge('seed_e_folder_start_functional', ID.folderStart, ID.functional, 'out', 'conditions'),
     edge('seed_e_functional_end', ID.functional, ID.folderEnd, 'impact', 'in'),
   ];
 
@@ -128,7 +130,7 @@ export function buildSeed(): Record<string, GraphData> {
   ];
 
   return {
-    root: { nodes: root, edges: [] },
+    root: { nodes: root, edges: rootEdges },
     [ID.folder]: { nodes: folderGraph, edges: folderEdges },
     [ID.functional]: { nodes: scriptNodes, edges: scriptEdges },
   };

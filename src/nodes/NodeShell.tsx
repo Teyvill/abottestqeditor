@@ -36,17 +36,21 @@ export function NodeShell({
   return (
     <div
       onDoubleClick={onDoubleClick}
-      style={{ width }}
-      className={`rounded-xl overflow-hidden shadow-lg bg-neutral-900 border border-neutral-700/80 ${
-        selected ? `ring-2 ${colors.ring}` : ''
+      style={{ width, boxShadow: selected ? undefined : '0 4px 14px rgba(0,0,0,0.55)' }}
+      className={`rounded-md overflow-hidden bg-[#1a1c22] border ${
+        selected ? `ring-2 ${colors.ring} border-transparent` : 'border-black/60'
       }`}
     >
-      <div className={`${colors.header} ${colors.text} px-3 py-1.5 flex items-center gap-1.5 text-sm font-semibold tracking-wide`}>
+      <div
+        className={`${colors.header} ${colors.text} px-3 py-1.5 flex items-center gap-1.5 text-sm font-bold tracking-wide bg-gradient-to-b from-white/10 to-transparent`}
+      >
         {icon}
         <span className="truncate flex-1">{title}</span>
         {headerRight}
       </div>
-      {children && <div className="px-3 py-2.5 text-xs text-neutral-200 space-y-2">{children}</div>}
+      {children && (
+        <div className="px-3 py-2.5 text-xs text-neutral-200 space-y-2 bg-[#202329]">{children}</div>
+      )}
     </div>
   );
 }

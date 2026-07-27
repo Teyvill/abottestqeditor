@@ -26,8 +26,8 @@ export function EventActorNode({ id, data, selected }: NodeProps) {
   const showPreview = isValidImageUrl(d.image);
 
   return (
-    <NodeShell kind="eventActor" title="Event Actor" selected={selected} width={300}>
-      <PinRow side="left" type="target" id="conditions" label="trigger conditions (Location)" activeColor="#f59e0b" />
+    <NodeShell kind="eventActor" title="🎭 Event Actor" selected={selected} width={300}>
+      <PinRow side="left" type="target" id="conditions" label="trigger (Start / Location / Unlock)" pinType="trigger" />
 
       <Field label={`Name (${d.name.length}/60)`}>
         <input
@@ -101,7 +101,7 @@ export function EventActorNode({ id, data, selected }: NodeProps) {
         </div>
       </Field>
 
-      <PinRow side="right" type="source" id="text" label="event text" activeColor="#f59e0b" />
+      <PinRow side="right" type="source" id="text" label="event text" pinType="story" />
 
       <button
         className="nodrag w-full mt-1 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-amber-950 font-semibold text-xs flex items-center justify-center gap-1"
