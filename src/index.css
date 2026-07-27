@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background: #0b0d12;
+  color: #e5e7eb;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+.react-flow__attribution {
+  display: none;
+}
