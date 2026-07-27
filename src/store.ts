@@ -16,7 +16,7 @@ import type {
   OptionItem,
   PathEntry,
 } from './types';
-import { buildSeed } from './seed';
+import { buildSeed, SEED_VERSION } from './seed';
 
 let idCounter = 1;
 export function nextId(prefix: string): string {
@@ -125,7 +125,11 @@ function initialGraphs(): Record<string, GraphData> {
   if (AUTOSAVE_ENABLED) {
     try {
       const raw = localStorage.getItem(AUTOSAVE_KEY);
-      if (raw) return (JSON.parse(raw) as { graphs: Record<string, GraphData> }).graphs;
+      if (raw) {
+        const parsed = JSON.parse(raw) as { graphs: Record<string, GraphData>; seedVersion?: number };
+        // Autosave from a previous seed revision is stale, not a real save — discard it.
+        if (parsed.seedVersion === SEED_VERSION) return parsed.graphs;
+      }
     } catch {
       // fall through to seed
     }
@@ -366,7 +370,7 @@ function persist(get: () => StoreState) {
   if (!AUTOSAVE_ENABLED) return;
   try {
     const { graphs } = get();
-    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ graphs }));
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ graphs, seedVersion: SEED_VERSION }));
   } catch {
     // ignore quota / serialization errors in demo
   }

@@ -1,5 +1,10 @@
 import type { FlowEdge, FlowNode, GraphData } from './types';
 
+// Bump this whenever buildSeed()'s content changes so a browser's stale
+// localStorage autosave (from a previous version of the seed) gets thrown
+// away instead of permanently shadowing the new seed content.
+export const SEED_VERSION = 3;
+
 // Seed content sourced from the Lindenmoor design doc ("Lindenmoor. Ивенты
 // WIP"): the approved "Пассажир" event, and the "Завидный урожай" ->
 // "Мельница" pair, which the doc gates behind one another (harvest the

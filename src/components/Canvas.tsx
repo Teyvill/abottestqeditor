@@ -6,6 +6,9 @@ import {
   MiniMap,
   Controls,
   MarkerType,
+  type Connection,
+  type Edge,
+  type IsValidConnection,
   type NodeMouseHandler,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -35,17 +38,32 @@ export function Canvas() {
     [enterContainer],
   );
 
-  const styledEdges = useMemo(() => {
-    const nodeKindById = new Map(graph.nodes.map((n) => [n.id, n.data.kind]));
-    return graph.edges.map((e) => {
-      const color = PIN_TYPE_COLOR[resolvePinType(nodeKindById.get(e.source), e.sourceHandle)];
-      return {
-        ...e,
-        style: { stroke: color, strokeWidth: 2.5 },
-        markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
-      };
-    });
-  }, [graph.edges, graph.nodes]);
+  const nodeKindById = useMemo(() => new Map(graph.nodes.map((n) => [n.id, n.data.kind])), [graph.nodes]);
+
+  const styledEdges = useMemo(
+    () =>
+      graph.edges.map((e) => {
+        const color = PIN_TYPE_COLOR[resolvePinType(nodeKindById.get(e.source), e.sourceHandle)];
+        return {
+          ...e,
+          style: { stroke: color, strokeWidth: 2.5 },
+          markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
+        };
+      }),
+    [graph.edges, nodeKindById],
+  );
+
+  // Flow (actionable, moves the graph forward) and pin (context/conditions)
+  // connectors are different families — a wire can only join two of the same kind.
+  const isValidConnection: IsValidConnection = useCallback(
+    (connection: Edge | Connection) => {
+      if (connection.source === connection.target) return false;
+      const sourceType = resolvePinType(nodeKindById.get(connection.source), connection.sourceHandle);
+      const targetType = resolvePinType(nodeKindById.get(connection.target), connection.targetHandle);
+      return sourceType === targetType;
+    },
+    [nodeKindById],
+  );
 
   return (
     <div className="relative w-full h-full">
@@ -57,6 +75,7 @@ export function Canvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
         onNodeDoubleClick={onNodeDoubleClick}
         onNodesDelete={(nodes) => nodes.forEach((n) => deleteNode(n.id))}
         onEdgesDelete={(edges) => edges.forEach((e) => deleteEdge(e.id))}
