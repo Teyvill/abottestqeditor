@@ -54,13 +54,16 @@ npm run preview   # локально проверить dist/
   Folder/Functional — вход внутрь, хлебные крошки — навигация обратно.
 - **Все 9 типов нод** из спеки, включая не-прототипные поля/пины — они видимы,
   но неактивны и помечены бейджем «later» с тултипом.
-- **Пины и провода в стиле Blueprint**: цвет и форма пина зависят от типа
-  соединения, а не от цвета ноды — `trigger` (белый треугольник, как exec-пин
-  в Blueprints: Start/Location/Unlock → Folder/Functional/Event Actor) и
-  `story` (бирюзовый кружок: текст ивента → Dialogue → Options/Continue →
-  End/Unlock). Связанные пины всегда совпадают по цвету, провода получают
-  стрелку-указатель направления. Start можно добавить и подключить на любом
-  из трёх уровней — к Folder, к Functional или напрямую к Event Actor.
+- **Пины и провода в стиле Blueprint**: два типа коннектора, а не цвет ноды,
+  определяют вид пина — `flow` (белая стрелка, без подписи «trigger»: всё,
+  что двигает граф вперёд — Start → Folder/Functional/Event Actor, Event
+  Actor → Dialogue, Dialogue/Option → Dialogue/End/Unlock, Unlock → Event
+  Actor) и `pin` (серый кружок: всё, что даёт контекст, а не двигает
+  сюжет — Location → Event Actor, заглушка условия у Option). Связанные пины
+  всегда совпадают по цвету и форме. Start можно добавить и подключить на
+  любом из трёх уровней — к Folder, к Functional или напрямую к Event Actor;
+  у Event Actor для этого отдельный `flow`-пин, независимый от `pin`-входа
+  Location.
 - **Режим Play** (кнопка ▶ на Event Actor) — модалка-плеер проходит по графу от
   первой Dialogue через Options/Continue до End (закрывает модалку) или Unlock
   (тост «Unlocked: ...» и закрытие).

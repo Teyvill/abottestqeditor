@@ -22,7 +22,7 @@ export function FolderNode({ id, data, selected }: NodeProps) {
         </span>
       }
     >
-      <PinRow side="left" type="target" id="conditions" label="trigger" pinType="trigger" />
+      <PinRow side="left" type="target" id="trigger" label="" pinType="flow" />
       <Field label="Name">
         <input
           className={inputCls}

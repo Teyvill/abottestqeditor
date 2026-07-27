@@ -18,7 +18,7 @@ export function DialogueNode({ id, data, selected }: NodeProps) {
 
   return (
     <NodeShell kind="dialogue" title="💬 Dialogue" selected={selected} width={300}>
-      <PinRow side="left" type="target" id="in" label="in" pinType="story" />
+      <PinRow side="left" type="target" id="in" label="in" pinType="flow" />
       <textarea
         className={`${inputCls} min-h-20 resize-y`}
         value={d.text}
@@ -26,7 +26,7 @@ export function DialogueNode({ id, data, selected }: NodeProps) {
         placeholder="Dialogue text..."
       />
 
-      {!hasOptions && <PinRow side="right" type="source" id="impact" label="impact (Continue)" pinType="story" />}
+      {!hasOptions && <PinRow side="right" type="source" id="impact" label="impact (Continue)" pinType="flow" />}
 
       <div className="space-y-1.5">
         {d.options.map((opt, i) => (
@@ -90,7 +90,7 @@ function Handle({ side, active, optionId }: { side: 'left' | 'right'; active: bo
       type={side === 'left' ? 'target' : 'source'}
       id={side === 'left' ? `opt-cond-${optionId}` : `opt-${optionId}`}
       label=""
-      pinType={side === 'left' ? 'trigger' : 'story'}
+      pinType={side === 'left' ? 'pin' : 'flow'}
       active={active}
     />
   );

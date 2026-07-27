@@ -10,7 +10,7 @@ export function UnlockNode({ id, data, selected }: NodeProps) {
 
   return (
     <NodeShell kind="unlock" title="🔓 Unlock" selected={selected} width={220}>
-      <PinRow side="left" type="target" id="in" label="in" pinType="story" />
+      <PinRow side="left" type="target" id="in" label="in" pinType="flow" />
       <Field label="Unlock id / label">
         <input
           className={inputCls}
@@ -22,7 +22,7 @@ export function UnlockNode({ id, data, selected }: NodeProps) {
         <LaterBadge tooltip="later: spawns a persistent state variable" />
         <span className="text-[10px] text-neutral-500">state variable</span>
       </div>
-      <PinRow side="right" type="source" id="out" label="trigger →" pinType="trigger" />
+      <PinRow side="right" type="source" id="out" label="" pinType="flow" />
     </NodeShell>
   );
 }

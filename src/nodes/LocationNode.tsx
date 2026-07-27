@@ -35,7 +35,7 @@ export function LocationNode({ id, data, selected }: NodeProps) {
         <LaterBadge tooltip="later: irregular zones / collider shapes" />
         <span className="text-[10px] text-neutral-500">irregular zones</span>
       </div>
-      <PinRow side="right" type="source" id="out" label="trigger →" pinType="trigger" />
+      <PinRow side="right" type="source" id="out" label="conditions" pinType="pin" />
     </NodeShell>
   );
 }

@@ -21,7 +21,7 @@ const baseHandleStyle: CSSProperties = {
 
 function handleStyle(pinType: PinType, active: boolean): CSSProperties {
   const color = active ? PIN_TYPE_COLOR[pinType] : '#525252';
-  if (pinType === 'trigger') {
+  if (pinType === 'flow') {
     // exec-style arrow/triangle pin, Blueprint-flavored
     return {
       ...baseHandleStyle,
@@ -50,11 +50,11 @@ export function PinRow({ side, type, id, label, pinType, active = true, laterToo
   const handle = (
     <Handle type={type} position={position} id={id} isConnectable={active} style={handleStyle(pinType, active)} />
   );
-  const text = (
+  const text = label ? (
     <span className={`text-[10px] leading-tight ${active ? 'text-neutral-300' : 'text-neutral-500'}`}>
       {label}
     </span>
-  );
+  ) : null;
   return (
     <div className={`flex items-center gap-1.5 ${side === 'right' ? 'flex-row-reverse text-right' : ''}`}>
       {handle}

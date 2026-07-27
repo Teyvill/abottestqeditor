@@ -14,6 +14,7 @@ const ID = {
 
   // "The Passenger" (cat-on-head) event
   passengerFunctional: 'seed_passenger_functional',
+  passengerStart: 'seed_passenger_start',
   passengerLocation: 'seed_passenger_location',
   passengerActor: 'seed_passenger_actor',
   passengerIntro: 'seed_passenger_intro',
@@ -27,6 +28,7 @@ const ID = {
 
   // "Field Harvest" (Завидный урожай -> unlocks -> Мельница)
   fieldFunctional: 'seed_field_functional',
+  harvestStart: 'seed_harvest_start',
   harvestLocation: 'seed_harvest_location',
   harvestActor: 'seed_harvest_actor',
   harvestIntro: 'seed_harvest_intro',
@@ -61,7 +63,7 @@ export function buildSeed(): Record<string, GraphData> {
       data: { kind: 'folder', name: 'Lindenmoor — Events' },
     },
   ];
-  const rootEdges: FlowEdge[] = [edge('seed_e_start_folder', ID.rootStart, ID.folder, 'out', 'conditions')];
+  const rootEdges: FlowEdge[] = [edge('seed_e_start_folder', ID.rootStart, ID.folder, 'out', 'trigger')];
 
   const folderGraph: FlowNode[] = [
     { id: ID.folderStart, type: 'start', position: { x: 60, y: 200 }, data: { kind: 'start' } },
@@ -80,18 +82,19 @@ export function buildSeed(): Record<string, GraphData> {
     { id: ID.folderEnd, type: 'end', position: { x: 700, y: 200 }, data: { kind: 'end' } },
   ];
   const folderEdges: FlowEdge[] = [
-    edge('seed_e_folder_start_passenger', ID.folderStart, ID.passengerFunctional, 'out', 'conditions'),
-    edge('seed_e_folder_start_field', ID.folderStart, ID.fieldFunctional, 'out', 'conditions'),
+    edge('seed_e_folder_start_passenger', ID.folderStart, ID.passengerFunctional, 'out', 'trigger'),
+    edge('seed_e_folder_start_field', ID.folderStart, ID.fieldFunctional, 'out', 'trigger'),
     edge('seed_e_passenger_end', ID.passengerFunctional, ID.folderEnd, 'impact', 'in'),
     edge('seed_e_field_end', ID.fieldFunctional, ID.folderEnd, 'impact', 'in'),
   ];
 
   // ---- Passenger script graph ----
   const passengerNodes: FlowNode[] = [
+    { id: ID.passengerStart, type: 'start', position: { x: 40, y: 60 }, data: { kind: 'start' } },
     {
       id: ID.passengerLocation,
       type: 'location',
-      position: { x: 40, y: 260 },
+      position: { x: 40, y: 300 },
       data: { kind: 'location', x: 860, y: 0, z: 430, radius: 12 },
     },
     {
@@ -160,7 +163,8 @@ export function buildSeed(): Record<string, GraphData> {
     { id: ID.passengerEnd, type: 'end', position: { x: 1620, y: 60 }, data: { kind: 'end' } },
   ];
   const passengerEdges: FlowEdge[] = [
-    edge('seed_e_ploc_pactor', ID.passengerLocation, ID.passengerActor, 'out', 'conditions'),
+    edge('seed_e_pstart_pactor', ID.passengerStart, ID.passengerActor, 'out', 'trigger'),
+    edge('seed_e_ploc_pactor', ID.passengerLocation, ID.passengerActor, 'out', 'context'),
     edge('seed_e_pactor_intro', ID.passengerActor, ID.passengerIntro, 'text', 'in'),
     edge('seed_e_popt_putback', ID.passengerIntro, ID.passengerPutBack, `opt-${ID.passengerOptPutBack}`, 'in'),
     edge('seed_e_popt_keep', ID.passengerIntro, ID.passengerKeep, `opt-${ID.passengerOptKeep}`, 'in'),
@@ -172,6 +176,7 @@ export function buildSeed(): Record<string, GraphData> {
 
   // ---- Field Harvest script graph (Завидный урожай -> Unlock -> Мельница) ----
   const fieldNodes: FlowNode[] = [
+    { id: ID.harvestStart, type: 'start', position: { x: 40, y: -160 }, data: { kind: 'start' } },
     {
       id: ID.harvestLocation,
       type: 'location',
@@ -309,14 +314,15 @@ export function buildSeed(): Record<string, GraphData> {
   ];
 
   const fieldEdges: FlowEdge[] = [
-    edge('seed_e_hloc_hactor', ID.harvestLocation, ID.harvestActor, 'out', 'conditions'),
+    edge('seed_e_hstart_hactor', ID.harvestStart, ID.harvestActor, 'out', 'trigger'),
+    edge('seed_e_hloc_hactor', ID.harvestLocation, ID.harvestActor, 'out', 'context'),
     edge('seed_e_hactor_intro', ID.harvestActor, ID.harvestIntro, 'text', 'in'),
     edge('seed_e_hopt_help', ID.harvestIntro, ID.harvestHelp, `opt-${ID.harvestOptHelp}`, 'in'),
     edge('seed_e_hopt_walk', ID.harvestIntro, ID.harvestWalk, `opt-${ID.harvestOptWalk}`, 'in'),
     edge('seed_e_help_unlock', ID.harvestHelp, ID.millUnlock, 'impact', 'in'),
     edge('seed_e_walk_end', ID.harvestWalk, ID.fieldEnd, 'impact', 'in'),
-    edge('seed_e_unlock_millactor', ID.millUnlock, ID.millActor, 'out', 'conditions'),
-    edge('seed_e_mloc_mactor', ID.millLocation, ID.millActor, 'out', 'conditions'),
+    edge('seed_e_unlock_millactor', ID.millUnlock, ID.millActor, 'out', 'trigger'),
+    edge('seed_e_mloc_mactor', ID.millLocation, ID.millActor, 'out', 'context'),
     edge('seed_e_mactor_intro', ID.millActor, ID.millIntro, 'text', 'in'),
     edge('seed_e_mopt_stones', ID.millIntro, ID.millStones, `opt-${ID.millOptStones}`, 'in'),
     edge('seed_e_mopt_hands', ID.millIntro, ID.millHands, `opt-${ID.millOptHands}`, 'in'),

@@ -35,18 +35,17 @@ export function Canvas() {
     [enterContainer],
   );
 
-  const styledEdges = useMemo(
-    () =>
-      graph.edges.map((e) => {
-        const color = PIN_TYPE_COLOR[resolvePinType(e.sourceHandle)];
-        return {
-          ...e,
-          style: { stroke: color, strokeWidth: 2.5 },
-          markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
-        };
-      }),
-    [graph.edges],
-  );
+  const styledEdges = useMemo(() => {
+    const nodeKindById = new Map(graph.nodes.map((n) => [n.id, n.data.kind]));
+    return graph.edges.map((e) => {
+      const color = PIN_TYPE_COLOR[resolvePinType(nodeKindById.get(e.source), e.sourceHandle)];
+      return {
+        ...e,
+        style: { stroke: color, strokeWidth: 2.5 },
+        markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
+      };
+    });
+  }, [graph.edges, graph.nodes]);
 
   return (
     <div className="relative w-full h-full">

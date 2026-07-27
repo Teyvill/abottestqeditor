@@ -27,7 +27,8 @@ export function EventActorNode({ id, data, selected }: NodeProps) {
 
   return (
     <NodeShell kind="eventActor" title="🎭 Event Actor" selected={selected} width={300}>
-      <PinRow side="left" type="target" id="conditions" label="trigger (Start / Location / Unlock)" pinType="trigger" />
+      <PinRow side="left" type="target" id="trigger" label="" pinType="flow" />
+      <PinRow side="left" type="target" id="context" label="conditions (Location)" pinType="pin" />
 
       <Field label={`Name (${d.name.length}/60)`}>
         <input
@@ -101,7 +102,7 @@ export function EventActorNode({ id, data, selected }: NodeProps) {
         </div>
       </Field>
 
-      <PinRow side="right" type="source" id="text" label="event text" pinType="story" />
+      <PinRow side="right" type="source" id="text" label="event text" pinType="flow" />
 
       <button
         className="nodrag w-full mt-1 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-amber-950 font-semibold text-xs flex items-center justify-center gap-1"

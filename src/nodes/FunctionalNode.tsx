@@ -22,7 +22,7 @@ export function FunctionalNode({ id, data, selected }: NodeProps) {
         </span>
       }
     >
-      <PinRow side="left" type="target" id="conditions" label="trigger" pinType="trigger" />
+      <PinRow side="left" type="target" id="trigger" label="" pinType="flow" />
       <Field label="Name">
         <input
           className={inputCls}
@@ -31,7 +31,7 @@ export function FunctionalNode({ id, data, selected }: NodeProps) {
         />
       </Field>
       <div className="text-[10px] text-neutral-500 italic">Double-click to open script</div>
-      <PinRow side="right" type="source" id="impact" label="end of script" pinType="story" />
+      <PinRow side="right" type="source" id="impact" label="end of script" pinType="flow" />
     </NodeShell>
   );
 }
