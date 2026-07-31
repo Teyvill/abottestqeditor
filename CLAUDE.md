@@ -1,301 +1,189 @@
-# StoryFlow-lite — project spec (for Claude)
+# StoryFlow-lite — functional spec (for Claude)
 
 A demo node-graph editor for game events, styled after StoryFlow / Articy
-Draft X / Unreal Blueprints. Static SPA, no backend, deploys to Netlify.
-Goal: let a game designer assemble an event with nodes + pins and
-immediately play through it in Play mode.
+Draft X / Unreal Blueprints. It runs entirely in the browser — nothing is
+saved on a server. The goal: a game designer assembles an event out of
+nodes and connectors, then immediately plays through it to check how it
+feels.
 
-This file is the engineering spec for future Claude Code sessions: what's
-already built, how it's wired, and which decisions it rests on. End-user
-run/deploy instructions live in `README.md`.
+This file describes **what the tool does and how it behaves** — enough
+for another Claude to assemble it from scratch. How it's actually built is
+left to the programmer.
 
-## Stack
+## The canvas is nested, not flat
 
-React + TypeScript + Vite, `@xyflow/react` (React Flow) for the canvas,
-`zustand` for state, Tailwind CSS for styling. All state lives in memory,
-plus an autosave to `localStorage` (see "Autosave and SEED_VERSION" below).
+It's not one big canvas — it's three levels deep, each level its own
+canvas. A container node (a Folder, or a Functional) opens into its own
+child canvas when you double-click it. Breadcrumbs at the top always show
+where you are and let you jump back to any earlier level.
 
-## Nesting model
+1. **Root level** — the organizational overview. Holds `Start` and
+   `Folder` nodes.
+2. **Inside a Folder** — the functional level. Holds `Start`,
+   `Functional`, `End`, and `Unlock` nodes.
+3. **Inside a Functional** — the script level, where an actual event gets
+   built. Holds `Start`, `Event Actor`, `Location`, `Dialogue` (with
+   `Option`s attached to it), `End`, and `Unlock`.
 
-A tree of graphs, not a single canvas. `useStore` (`src/store.ts`) holds:
+Only the node kinds valid for the level you're currently looking at can be
+added there. `Start` can only exist once per canvas — the option to add
+another one disables itself once one is present.
 
-```ts
-graphs: Record<string, { nodes: FlowNode[]; edges: FlowEdge[] }>
-path: { containerId: string; label: string; level: number }[]
-```
+## Node kinds
 
-`"root"` is the key for the top-level (org-chart) canvas. When a `Folder`
-or `Functional` node is created, a child graph `graphs[nodeId]` is lazily
-created for it (seeded with a single `Start` node). Double-clicking a
-Folder/Functional (`enterContainer`) pushes an entry onto `path` and the
-canvas re-renders `graphs[nodeId]`. Breadcrumbs (`Breadcrumbs.tsx`) are
-clickable and truncate `path` to the clicked index; the "↑ up" button does
-the same for one level up.
+### Start
+No fields. One outgoing connector. Exists at every level, and is what
+actually kicks off whatever "next thing" lives at that level — a Folder, a
+Functional, or an Event Actor.
 
-Three graph levels:
+### Folder
+An organizational grouping with a name. Has one incoming connector (fed by
+a Start) and shows how many nodes live inside it. Double-click to step
+into its own child canvas.
 
-1. **Root / organizational** (`path[0].level === 1`): `Start`, `Folder`.
-2. **Functional** (inside a `Folder`, `level === 2`): `Start`,
-   `Functional`, `End`, `Unlock`.
-3. **Script** (inside a `Functional`, `level === 3`): `Start`,
-   `Event Actor`, `Location`, `Dialogue` (+ `Option` inside Dialogue),
-   `End`, `Unlock`.
+### Functional
+Wraps a single event at the functional level. Has a name, one incoming
+connector (fed by a Start), and one outgoing connector labeled "end of
+script" — this is what the event inside it eventually reaches (an `End`
+or `Unlock` at this same level). Double-click to step into its script.
 
-The node palette (`Palette.tsx`, `LEVEL_ITEMS`) is context-aware per
-level — it only shows the kinds valid for the current canvas. `Start` is a
-singleton per canvas at every level (its palette button disables itself
-once one exists).
+### Event Actor — the centerpiece
+The actual event. Fields:
+- A name, capped at 60 characters, with a live character counter.
+- An auto-generated ID, built from a location/region code plus a running
+  number plus the event's own name — with a manual override available if
+  the auto-generated one needs to be replaced.
+- An image URL, shown as a preview thumbnail once it looks valid.
+- Repeatable / Unique toggles.
+- A run-limit field — visible, but intentionally not wired up yet (a
+  planned feature, not usable in this prototype).
 
-## Node kinds and their pins
+It has **two separate incoming connectors** that must never be confused
+with each other:
+- One is the **activation** connector — the thing that actually turns the
+  event on. Fed by a Start, or by an Unlock coming from a different event.
+- The other is a **conditions** connector — purely contextual, fed only by
+  a Location. It says *where* the event happens; on its own it never
+  turns anything on.
 
-All pin logic lives in `src/nodes/pinTypes.ts` + `src/nodes/Pin.tsx`
-(`PinRow`) — see the `flow`/`pin` section below. Here's what each node has,
-its handle `id`s, and their type.
+One outgoing connector leads into the event's first line of dialogue. A
+Play button opens the event in a player view.
 
-### Start (`src/nodes/StartNode.tsx`)
-- One source pin `out`, type `flow`, unlabeled (just the arrow).
-- Entry point. Can exist at any of the three levels (see the palette), one
-  per canvas.
+The ID formula's building blocks (region/sector/settlement/location name/
+sequence number) don't have their own input fields yet — they can only be
+set through the starter content or by importing a save file that already
+has them.
 
-### Folder (`FolderNode.tsx`)
-- Field `name: string`.
-- Target pin `trigger` (flow, unlabeled) on the left — accepts `Start.out`.
-- Badge showing node count inside (`graphs[id]?.nodes.length`).
-- Double-click → enters its child graph.
+### Dialogue
+A block of open-ended text, plus one incoming connector. On the outgoing
+side, either:
+- one shared connector used as a "Continue" step, if there are no
+  options, or
+- a list of player-facing options once at least one is added (the shared
+  Continue connector disappears in that case).
 
-### Functional (`FunctionalNode.tsx`)
-- Field `name: string`.
-- Target pin `trigger` (flow, unlabeled) on the left — accepts `Start.out`.
-- Source pin `impact` (flow, labeled "end of script") on the right — feeds
-  `End`/`Unlock` in the same (functional-level) graph.
-- Badge with node count inside, double-click → enters the script graph.
+### Option
+Not a node of its own — it's attached to a Dialogue, listed underneath it,
+and can be dragged to reorder. Each option has its own text and its own
+outgoing connector (its own consequence), leading to another Dialogue, an
+End, or an Unlock. Each option also has a placeholder for a future
+condition (making the option either invisible, or visible-but-locked) —
+present in the UI so the intent is clear, but not actually settable yet.
 
-### Event Actor (`EventActorNode.tsx`) — the central node
-Fields (`EventActorData` in `types.ts`):
-- `name: string`, capped at 60 chars, with a live counter in the field
-  label.
-- `idOverride: string | null` plus the auto-ID (see below) with an
-  override button.
-- `image: string` — a URL; if it's a valid http(s) URL, a preview
-  thumbnail is shown.
-- `repeatable: boolean`, `unique: boolean` — checkboxes.
-- `maxRuns: number` — a **"later" stub**, input is disabled.
-- ID-formula source fields: `continent`, `sector`, `settlement`,
-  `locationName`, `seq` — currently just defaulted strings with no
-  dedicated inputs in the UI (see TODO below if that's ever needed; right
-  now they're only editable via the seed defaults or JSON import).
+### Location
+A spatial trigger: X/Y/Z coordinates and an activation radius. Has a
+placeholder for "irregular zones" (a shape other than a simple radius) —
+not a real feature yet. One outgoing connector, and it is *only* ever
+context — it can feed an Event Actor's conditions connector, never its
+activation connector.
 
-Pins — **two independent connectors on the left**, not one:
-- Target pin `trigger` (flow, unlabeled) — accepts `Start.out` or
-  `Unlock.out`. This is what actually **activates** the event.
-- Target pin `context` (pin, labeled "conditions (Location)") — accepts
-  only `Location.out`. This is context (where), it doesn't advance
-  anything.
+### End
+A dead end. One incoming connector. Reaching it while playing closes the
+event.
 
-Right side: source pin `text` (flow, labeled "event text") — leads to the
-first `Dialogue`.
+### Unlock
+One incoming connector (fed by a Dialogue/Option consequence), and one
+outgoing connector that — like a Start — can activate an Event Actor. Has
+a label field identifying what's being unlocked. Has a placeholder for a
+future persistent flag. Reaching it while playing shows a brief
+"Unlocked: <label>" notice, then closes the event.
 
-The `▶ Play` button at the bottom of the node opens `PlayModal`.
+## Two kinds of connector, never mixed
 
-Auto-ID formula (`computeEventActorId` in `types.ts`):
-```
-`${continent}${sector}${settlement}${locationName}Event${seq}${kebab(name)}`
-```
-Reference example from the original brief:
-`foSector1CapitalLindenmoorEvent01the-passenger`. There's a **TODO comment**
-in the code: the brief's prose said "uppercase", but the reference example
-itself is lower-case kebab; implemented to match the example, not the
-prose.
+Every connector on every node is one of exactly two kinds, and a wire can
+only ever join two connectors of the *same* kind:
 
-### Dialogue (`DialogueNode.tsx`)
-- Target pin `in` (flow, labeled "in") on the left.
-- `text: string` — a textarea, no length limit.
-- If `options.length === 0`: a source pin `impact` (flow, labeled "impact
-  (Continue)") appears on the right — in Play this becomes the Continue
-  button.
-- `Option` is **not a standalone React Flow node** — it's an array
-  `options: OptionItem[]` inside the Dialogue's data. It renders as
-  "magnetized" rows under the text, reorderable via native HTML5
-  drag-and-drop (`reorderOptions` in the store). Each row has:
-  - a target pin `opt-cond-${optionId}` (pin, `active={false}` — a stub;
-    its tooltip explains the future `hidden`/`locked` condition types).
-  - a source pin `opt-${optionId}` (flow) — that option's "impact", leads
-    to a `Dialogue`/`End`/`Unlock`.
-  - When `options.length > 0`, the Dialogue's shared right-side `impact`
-    pin is hidden (only the per-option pins remain).
+- **An actionable arrow** — anything that moves the story forward: a
+  Start kicking something off, dialogue advancing to its next line or to
+  an option's consequence, an Unlock activating the next event. Drawn as
+  a plain arrow, no label needed — the shape alone says "this leads to
+  that."
+- **A context pin** — anything that only supplies background information
+  without moving anything forward by itself: a Location telling an Event
+  Actor where it happens, or (in the future) a condition on an option.
+  Drawn as a small dot, labeled with what kind of context it carries.
 
-### Location (`LocationNode.tsx`)
-- `x, y, z: number` (three inputs in a row), `radius: number`
-  ("Activation radius (m)").
-- A "later" stub: "irregular zones" (badge only, no real behavior).
-- Source pin `out` (**pin**, labeled "conditions") on the right — the only
-  pin in the project whose handle id is literally `out` but resolves as
-  `pin`, not `flow` (see `resolvePinType`'s special case for
-  `nodeKind === 'location'`). It only ever leads into an Event Actor's
-  `context` pin.
+This is enforced, not just a visual convention: you can't wire an arrow
+connector into a context pin or vice versa, so it's impossible to
+accidentally make "this happens in a certain place" behave as if it were
+"the thing that makes this happen." Each node kind has its own header
+color for quick identification, but connector color follows this arrow/pin
+split instead — so two ends of any legal wire always match in color.
 
-### End (`EndNode.tsx`)
-- Only a target pin `in` (flow, labeled "in"). In Play, reaching it closes
-  the modal.
+## Playing an event
 
-### Unlock (`UnlockNode.tsx`)
-- Target pin `in` (flow, labeled "in") on the left — fed by a
-  Dialogue/Option's Impact.
-- Field `label: string` ("Unlock id / label").
-- A "later" stub: "state variable" (a future persistent flag).
-- Source pin `out` (flow, unlabeled) on the right — leads into another
-  Event Actor's `trigger` pin. In Play: shows a toast `Unlocked: <label>`
-  and closes the modal.
+Clicking Play on an Event Actor opens a player view:
+- The event's image and name stay fixed at the top for the whole
+  playthrough.
+- The body shows the current line of dialogue.
+- If that line has options, each becomes a button (one marked invisible
+  stays hidden; one marked locked still shows with a lock icon and, in
+  this demo, is still clickable — there's no real gating yet). If it has
+  no options, there's a single Continue button instead.
+- Following the chain eventually reaches either an End (the view closes)
+  or an Unlock (a brief "Unlocked: ..." notice appears, then it closes).
+- There's no separate memory of what a player has already done — playing
+  just walks the current wiring live, exactly as the editor has it laid
+  out at that moment.
 
-## Connector model: `flow` vs `pin`
+## Editing behavior
 
-A key architectural decision (from a review pass): **a pin's type is
-determined by what it *does*, not by the node's color or kind** —
-`src/nodes/pinTypes.ts`:
+- An "add node" list only offers the kinds valid for whatever level you're
+  currently looking at.
+- Nodes can be dragged around; connectors are dragged between to wire
+  them (only matching-kind connectors accept each other); nodes and wires
+  can be selected and deleted.
+- Double-clicking a Folder or a Functional steps into what it contains;
+  breadcrumbs show the current path and jump back to any earlier level.
+- The canvas supports pan and zoom, with a minimap and zoom controls.
+- The whole project can be exported to a save file and re-imported later;
+  there's also a "reset to starter content" action.
+- Work is auto-saved in the browser as you go, so reloading the page
+  doesn't lose it — except that if the built-in starter content is ever
+  updated, that update must always win over anything already cached in a
+  visitor's browser, so nobody gets stuck looking at outdated starter
+  content forever.
 
-- **`flow`** — actionable, moves the graph forward. Rendered as a white
-  arrow (`clip-path` triangle), with no "trigger" text label — just the
-  shape. Covers every Start→container/actor link, Event Actor→Dialogue,
-  Dialogue/Option→Dialogue/End/Unlock, Unlock→Event Actor, and
-  Functional→End.
-- **`pin`** — context/condition, doesn't activate anything by itself.
-  Rendered as a gray circle (`#94a3b8`), with a label. Currently only:
-  Location→Event Actor, and the (inactive) Option condition stub.
+## Starter content
 
-`resolvePinType(nodeKind, handleId)` is the single function that drives
-both the pin's own color (`Pin.tsx`) and the color/arrowhead of the wire
-connecting it (`Canvas.tsx`, `styledEdges`), as well as connection
-validation. **Never let pin color and wire color diverge by going through
-different code paths** — both must call this same function, or connected
-ends will visually mismatch.
+Loads pre-populated with two real, hand-written events (not placeholder
+text) inside a shared folder:
+- **Passenger** — a giant gets accused of stealing a cat that's actually
+  just napping on their head; three options, three different flavorful
+  consequences.
+- **Field Harvest → Mill** — helping a farmer harvest an overgrown field
+  unlocks a second event (a broken mill) that isn't reachable any other
+  way; walking past instead skips straight to the end without unlocking
+  anything. This pair exists specifically to demonstrate one event
+  unlocking another.
 
-### Connection validation
+## Things intentionally left unfinished
 
-`Canvas.tsx` → `isValidConnection`: a connection is allowed only if
-`resolvePinType` of the source and target **match** (`flow↔flow` or
-`pin↔pin`), and `source !== target` (no self-loops). React Flow's default
-`strict` connection mode already blocks source→source/target→target, so
-"output→output" is impossible regardless of this extra check.
-
-If you add a new `handleId`, make sure to register it in `HANDLE_TYPE` in
-`pinTypes.ts` (or add a special case like the `out`+`location` one) —
-otherwise it silently resolves to `flow` by default.
-
-## Play mode (`PlayModal.tsx`)
-
-Opened via the `▶ Play` button on an Event Actor (`openPlay(actorId)` in
-the store). The player walks **the currently open graph**
-(`currentGraph()`):
-
-1. Find the edge `source === actorId && sourceHandle === 'text'` — that's
-   the starting `Dialogue`.
-2. Render the actor's `image` + `name` at the top (static for the whole
-   playthrough), and the current Dialogue's text in the body.
-3. If the Dialogue has `options` — render a button per option (skipping
-   any with `conditionType === 'hidden'`; `locked` renders with a 🔒 but
-   stays clickable — there's no real gating in the prototype). Clicking one
-   looks up the edge `source === dialogueId && sourceHandle ===
-   'opt-${optionId}'`.
-4. If there are no options — render a Continue button, which looks up the
-   edge with `sourceHandle === 'impact'`.
-5. `goTo(targetId)`: if the node isn't found, or it's an `End` →
-   `closePlay()`. If it's an `Unlock` → `showToast('Unlocked: ' + label)`
-   + `closePlay()`. Otherwise — `setCurrentId(targetId)` (the next
-   Dialogue).
-
-There's no separate player-state model — it's a plain edge-following
-graph walk.
-
-## Autosave and SEED_VERSION
-
-`localStorage['storyflow-lite-autosave-v1']` stores `{ graphs,
-seedVersion }`. On startup (`initialGraphs()` in `store.ts`), the autosave
-is used **only if** `seedVersion === SEED_VERSION` (exported from
-`seed.ts`). Otherwise, a fresh `buildSeed()` is loaded instead.
-
-**Important to remember**: if you edit `buildSeed()`, **always bump
-`SEED_VERSION`** — otherwise any browser with an older autosave (i.e.
-anyone who's already opened the page before) won't see the change and will
-silently keep showing its stale cached graph. This already caused a real
-bug once ("the new seed content isn't showing up"), fixed by adding this
-versioning — don't regress that protection.
-
-Autosave is a flagged feature (`AUTOSAVE_ENABLED` in `store.ts`) and can be
-disabled with a single constant.
-
-## Seed content
-
-`src/seed.ts` isn't invented — its dialogue/option text is copied
-**verbatim** from the Lindenmoor design doc (`Lindenmoor. Ивенты WIP`, a
-PDF the user attached). Root: `Start → Folder "Lindenmoor — Events"`.
-Inside it are two `Functional` nodes, both fired from that level's shared
-`Start`, both feeding a shared `End`:
-
-1. **Passenger** (`ID.passengerFunctional`) — the cat-on-the-giant's-head
-   event. Inside: a `Start` and a `Location` both feed the "Passenger"
-   Event Actor (the first into `trigger`, the second into `context`). An
-   intro Dialogue with 3 options (`Put the cat back` / `Keep the cat` /
-   `Shake the cat off`), each leading to its own result line → shared
-   `End`.
-2. **Field Harvest** (`ID.fieldFunctional`) — "Bountiful Harvest" unlocks
-   "Mill". Demonstrates `Unlock` connecting two Event Actors **within one
-   script graph** (there's no cross-graph edge support — Unlock can't
-   reach an actor in a different Functional).
-   - Event Actor "Bountiful Harvest": a `Start` + a `Location` feed its
-     pins. Intro with 2 options: `Help harvest it` → result → `Unlock`
-     (`label: 'field-mill-available'`) → the "Mill" Event Actor's `trigger`
-     pin; `Walk right by` → result → shared `End`.
-   - Event Actor "Mill": its `trigger` comes from the `Unlock` (not from a
-     Start — intentionally, the mill shouldn't be available from the
-     start), plus its own `Location` feeding `context`. Intro with 3
-     options, each → its own result line → shared `End`.
-
-Node IDs in the seed are deterministic strings (the `ID.*` object), not
-`nextId()` — so the seed diffs cleanly and edges can reference constants
-instead of UUIDs.
-
-## File layout
-
-```
-src/
-  types.ts          — NodeKind, *Data interfaces, computeEventActorId
-  store.ts           — zustand: the graphs tree, path, CRUD actions,
-                        onNodesChange/onEdgesChange/onConnect, export/import,
-                        autosave, resetSeed
-  seed.ts             — buildSeed() + SEED_VERSION
-  nodes/
-    pinTypes.ts        — PinType, PIN_TYPE_COLOR, resolvePinType — the
-                          single source of truth for pin color/shape AND
-                          wire color
-    Pin.tsx             — <PinRow>, renders the handle (triangle or circle)
-    NodeShell.tsx       — shared node chrome: header colored by kind,
-                          KIND_COLORS, LaterBadge, Field, inputCls
-    {Start,Folder,Functional,EventActor,Dialogue,Location,End,Unlock}Node.tsx
-    index.ts            — nodeTypes map for <ReactFlow>
-  components/
-    Canvas.tsx          — <ReactFlow>, styledEdges (color + arrowhead via
-                          resolvePinType), isValidConnection
-    Palette.tsx          — LEVEL_ITEMS, context-aware node adding
-    Breadcrumbs.tsx       — path navigation
-    Toolbar.tsx            — Export/Import JSON, Reset demo
-    PlayModal.tsx           — the player, graph traversal
-    Toast.tsx                — toast for Unlock
-```
-
-## Known deliberate limitations / future TODOs
-
-- Cross-graph edges aren't supported — `Unlock`/`Start` can only reach
-  nodes **in the same graph**. If "unlock an event in a different
-  Functional" is ever needed, that requires a different model (e.g. a
-  global registry of unlock flags instead of a direct edge).
-- The ID-formula fields (`continent`/`sector`/`settlement`/`locationName`/
-  `seq`) on Event Actor have no dedicated inputs in the UI — they're only
-  editable via the code defaults or JSON import/export. If needed, add
-  small inputs to `EventActorNode.tsx` next to the ID field.
-- `OptionItem.conditionType` (`hidden`/`locked`) exists as a data type, but
-  there's no UI to actually set it (the `opt-cond-*` pin stub is inactive).
-  If needed, that's the future "sub-editor inside a pin" feature the
-  original brief explicitly scoped out of the prototype.
-- `EventActor.repeatable`/`unique` are only tracked as data fields — Play
-  doesn't check "already completed" (there's no persistent player state
-  across Play runs).
+- An Unlock can only ever reach an Event Actor that lives inside the same
+  script — it can't reach into a different Functional's content.
+- The event ID's building-block fields have no dedicated inputs yet (see
+  Event Actor above).
+- Marking an option as hidden or locked isn't actually possible in the
+  editor yet — the connector for it is present but inert.
+- Repeatable/Unique are recorded but not enforced — playing an event
+  doesn't remember whether it was already completed before.
